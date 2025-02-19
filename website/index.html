@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script
+      src="https://kit.fontawesome.com/17679a8283.js"
+      crossorigin="anonymous"></script>
+    <title>Comfy Home Records Table</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #fcd527af;
+            color: rgb(0, 0, 0);
+            font-weight: bold;
+        }
+
+         .search-bar {
+        display: flex;
+        align-items: center;
+      }
+
+      .custom-search-input {
+        height: 50px;
+        width: 500px;
+        border-radius: 10px;
+        padding-left: 50px;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .custom-search-wrapper {
+        position: relative;
+        width: 100%;
+      }
+
+      .custom-search-wrapper i {
+        position: absolute;
+        top: 50%;
+        left: 20px;
+        transform: translateY(-50%);
+        font-size: 20px;
+        color: #888;
+      }
+
+
+       
+    </style>
+</head>
+<body>
+
+<h2>Comfy Home Total Stats</h2>
+    <form class="search-bar">
+      <div class="custom-search-wrapper">
+        <i class="fa fa-search" aria-hidden="true"></i>
+
+        <input
+          class="custom-search-input"
+          type="search"
+          placeholder="Search for your records here!"
+        />
+      </div>
+    </form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Date and Time</th>
+            <th>Outside Temperature (Degree Celsius)</th>
+            <th>Air conditioning Temperature (Degree Celsius)</th>
+            <th>Carbon Monoxide Levels (PPM)</th>
+            <th>Carbon Dioxide Levels (PPM)</th>
+            <th>Humidity (%)</th>
+        </tr>
+    </thead>
+    
+    <tbody id="recordsbody">
+        <tr>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<script>
+      let accessToken; 
+
+    function getTokenFromURL() {
+        const fullURL = new URL(window.location.href);
+        const hash = fullURL.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        accessToken = params.get('access_token');
+        console.log('Access Token:', accessToken);
+
+        if (!accessToken) {
+            console.error('No access token found in the URL.');
+        }
+    }
+
+    async function getRecords(num) {
+        if (!accessToken) {
+            console.error('Access token is missing. Cannot fetch records.');
+            return;
+        }
+
+        const url = "https://kqfueqseqk.execute-api.us-east-1.amazonaws.com/record";
+
+        try {
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('API Response:', data);
+
+            data.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+
+            let html = "";
+            const max = Math.min(num, data.length);
+
+            data.slice(0, max).forEach((record) => {
+                html += `
+                    <tr>
+                        <td>${new Date(record.time).toUTCString()}</td>
+                        <td>${record.outside_temperature}</td>
+                        <td>${record.aircon_temperature}</td>
+                        <td>${record.co_levels}</td>
+                        <td>${record.co2_levels}</td>
+                        <td>${record.humidity}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById("recordsbody").innerHTML = html;
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        getTokenFromURL(); 
+        getRecords(15);   
+    });
+
+
+</script>
+
+</body>
+</html>
